@@ -1,1 +1,0 @@
-# mybgm-page
