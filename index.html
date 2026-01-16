@@ -9,6 +9,11 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
     <style>
+        /* 防止滚动条导致页面左右跳动 */
+        html {
+            scrollbar-gutter: stable;
+        }
+
         :root {
             --bg-color: #24242e;
             --card-bg: #2a2a35;
@@ -29,10 +34,34 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 0 8px rgba(255, 126, 219, 0.4));
-            display: block; 
-            line-height: 1.6;
-            padding-bottom: 8px;
+            display: inline-block; 
+            line-height: 1.5;
+            padding-bottom: 4px;
         }
+        
+        /* 胶囊按钮样式 */
+        .capsule-container {
+            background-color: #1a1a24;
+            padding: 3px;
+            border-radius: 9999px; /* 足球场圆角 */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+        }
+        .capsule-btn {
+            padding: 6px 18px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #6b7280;
+        }
+        .capsule-active {
+            background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+        }
+
         .anime-card { 
             background-color: var(--card-bg);
             border: 1px solid rgba(174, 129, 255, 0.12);
@@ -54,7 +83,6 @@
         [v-cloak] { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* 导航栏样式：彻底移除 scale 缩放，改用边框和光晕 */
         .tab-btn {
             position: relative;
             flex-shrink: 0;
@@ -69,10 +97,9 @@
         .tab-selected { 
             background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%) !important; 
             color: white !important; 
-            /* 使用外阴影代替缩放来突出显示 */
             box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
             border: 2px solid rgba(255, 255, 255, 0.6) !important;
-            transform: none !important; /* 强制禁用缩放 */
+            transform: none !important;
         }
 
         .tab-is-today:not(.tab-selected) { 
@@ -148,31 +175,31 @@
 <body class="p-4 md:p-10">
 
 <div id="app" v-cloak class="max-w-7xl mx-auto rounded-3xl p-6 md:p-8 border border-white/5 shadow-2xl">
-    <header class="flex flex-row items-center mb-10 gap-4">
-        <div class="flex items-center">
-            <h1 class="text-2xl md:text-4xl font-black tracking-tighter shrink-0 anime-logo">
+    <header class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+        <div class="flex items-center gap-5">
+            <h1 class="text-2xl md:text-3xl font-black tracking-tighter shrink-0 anime-logo">
                 俺のbangumi project
             </h1>
+            <div class="capsule-container scale-90 origin-left">
+                <button @click="viewMode = 'mine'" :class="['capsule-btn', viewMode === 'mine' ? 'capsule-active' : 'hover:text-gray-300']">俺の追番</button>
+                <button @click="viewMode = 'all'" :class="['capsule-btn', viewMode === 'all' ? 'capsule-active' : 'hover:text-gray-300']">本季放送</button>
+            </div>
         </div>
-        <div class="ml-auto flex items-center gap-3">
-            <div class="hidden sm:block w-48 md:w-72">
+
+        <div class="flex items-center gap-3">
+            <div class="w-full sm:w-48 md:w-64">
                 <input v-model="searchQuery" type="text" placeholder="快速定位番剧..." 
-                    class="search-input rounded-xl px-4 h-[42px] text-sm w-full">
+                    class="search-input rounded-xl px-4 h-[40px] text-sm w-full">
             </div>
             <a :href="'https://bgm.tv/user/' + uid" target="_blank" class="shrink-0 flex items-center">
-                <div class="w-[42px] h-[42px] rounded-full overflow-hidden border-2 border-pink-500/50">
+                <div class="w-[40px] h-[40px] rounded-full overflow-hidden border-2 border-pink-500/50">
                     <img :src="userAvatar" class="w-full h-full object-cover hover:scale-110 transition-transform" @error="handleAvatarError" alt="avatar">
                 </div>
             </a>
         </div>
     </header>
 
-    <div class="mb-8 flex bg-[#1a1a24] p-1 rounded-xl w-fit border border-white/10 shadow-inner">
-        <button @click="viewMode = 'mine'" :class="['px-5 py-2 rounded-lg text-xs font-bold transition-all', viewMode === 'mine' ? 'tab-selected' : 'text-gray-500 hover:text-gray-400']">俺の追番</button>
-        <button @click="viewMode = 'all'" :class="['px-5 py-2 rounded-lg text-xs font-bold transition-all', viewMode === 'all' ? 'tab-selected' : 'text-gray-500 hover:text-gray-400']">本季放送</button>
-    </div>
-
-    <nav class="flex items-center gap-3 border-b border-white/5 mb-8 overflow-x-auto no-scrollbar pb-6">
+    <nav class="flex items-center justify-center gap-3 border-b border-white/5 mb-8 overflow-x-auto no-scrollbar pb-6">
         <button v-for="(tab, index) in navTabs" :key="index" @click="currentTab = tab.id"
             :class="[
                 'tab-btn flex flex-col items-center justify-center', 
@@ -207,8 +234,8 @@
                         <button v-if="shouldShowBtn(item, 1)" @click.stop="updateCollection(item, 1)" class="w-full max-w-[100px] bg-pink-500 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(236,72,153,0.3)] hover:brightness-110 transition-all">想看</button>
                         <button v-if="shouldShowBtn(item, 3)" @click.stop="updateCollection(item, 3)" class="w-full max-w-[100px] bg-[#52B54B] text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(82,181,75,0.3)] hover:brightness-110 transition-all">在看</button>
                         <button v-if="shouldShowBtn(item, 2)" @click.stop="updateCollection(item, 2)" class="w-full max-w-[100px] bg-[#2de2e6] text-[#1a1a24] py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(45,226,230,0.3)] hover:brightness-110 transition-all">看过</button>
-                        <button v-if="shouldShowBtn(item, 4)" @click.stop="updateCollection(item, 4)" class="w-full max-w-[100px] bg-amber-500 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(245,158,11,0.3)] hover:brightness-110 transition-all">搁置</button>
-                        <button v-if="shouldShowBtn(item, 5)" @click.stop="updateCollection(item, 5)" class="w-full max-w-[100px] bg-red-800 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(153,27,27,0.3)] hover:brightness-110 transition-all">抛弃</button>
+                        <button v-if="shouldShowBtn(item, 4)" @click.stop="updateCollection(item, 4)" class="w-full max-w-[100px] bg-amber-500 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10_rgba(245,158,11,0.3)] hover:brightness-110 transition-all">搁置</button>
+                        <button v-if="shouldShowBtn(item, 5)" @click.stop="updateCollection(item, 5)" class="w-full max-w-[100px] bg-red-800 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10_rgba(153,27,27,0.3)] hover:brightness-110 transition-all">抛弃</button>
                     </template>
                     <button @click.stop="openBangumi(item.id)" class="w-full max-w-[100px] bg-white/10 hover:bg-white/20 text-white border border-white/20 py-1.5 rounded-lg font-bold text-[10px] mt-2 flex items-center justify-center gap-1 transition-all">
                         <icon-link></icon-link>
@@ -256,7 +283,7 @@
             const viewMode = ref('all');
             const todayRaw = new Date().getDay();
             const todayId = todayRaw === 0 ? 7 : todayRaw;
-            const currentTab = ref(0); 
+            const currentTab = ref(todayId); 
             const searchQuery = ref('');
             const loading = ref(true);
             const currentChecking = ref('');
