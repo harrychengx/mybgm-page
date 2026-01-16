@@ -7,7 +7,7 @@
     <title>俺のbangumi project</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Mochiiy+Pop+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #24242e;
@@ -24,7 +24,7 @@
             color: var(--text-main);
         }
         .anime-logo {
-            font-family: 'Mochiiy Pop One', sans-serif;
+            font-family: 'Mochiy Pop One', sans-serif;
             background: linear-gradient(135deg, var(--accent-pink) 0%, var(--accent-purple) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -53,16 +53,33 @@
         }
         [v-cloak] { display: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* 导航栏样式：彻底移除 scale 缩放，改用边框和光晕 */
+        .tab-btn {
+            position: relative;
+            flex-shrink: 0;
+            min-width: 85px;
+            height: 64px;
+            border-radius: 1rem;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: transparent;
+        }
+
         .tab-selected { 
             background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%) !important; 
             color: white !important; 
-            box-shadow: 0 0 4px rgba(236, 72, 153, 0.2) !important;
-            border-color: transparent !important;
+            /* 使用外阴影代替缩放来突出显示 */
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.6) !important;
+            transform: none !important; /* 强制禁用缩放 */
         }
+
         .tab-is-today:not(.tab-selected) { 
             border: 2px solid var(--accent-cyan) !important;
             color: var(--accent-cyan) !important;
         }
+
         .btn-action-container {
             position: absolute;
             top: -1.5px;
@@ -132,7 +149,7 @@
 
 <div id="app" v-cloak class="max-w-7xl mx-auto rounded-3xl p-6 md:p-8 border border-white/5 shadow-2xl">
     <header class="flex flex-row items-center mb-10 gap-4">
-        <div class="flex items-center overflow-visible">
+        <div class="flex items-center">
             <h1 class="text-2xl md:text-4xl font-black tracking-tighter shrink-0 anime-logo">
                 俺のbangumi project
             </h1>
@@ -155,11 +172,11 @@
         <button @click="viewMode = 'all'" :class="['px-5 py-2 rounded-lg text-xs font-bold transition-all', viewMode === 'all' ? 'tab-selected' : 'text-gray-500 hover:text-gray-400']">本季放送</button>
     </div>
 
-    <nav class="flex items-center gap-2 md:gap-3 border-b border-white/5 mb-8 overflow-x-auto no-scrollbar pb-6">
+    <nav class="flex items-center gap-3 border-b border-white/5 mb-8 overflow-x-auto no-scrollbar pb-6">
         <button v-for="(tab, index) in navTabs" :key="index" @click="currentTab = tab.id"
             :class="[
-                'flex flex-col items-center justify-center min-w-[85px] h-[64px] rounded-2xl transition-all duration-200 border relative overflow-hidden', 
-                currentTab === tab.id ? 'tab-selected' : (tab.isToday ? 'tab-is-today' : 'bg-transparent text-gray-500 border-white/10 hover:border-pink-500/20')
+                'tab-btn flex flex-col items-center justify-center', 
+                currentTab === tab.id ? 'tab-selected' : (tab.isToday ? 'tab-is-today' : 'text-gray-500 hover:border-pink-500/20')
             ]">
             <span class="text-sm font-bold flex items-center gap-1.5 leading-none">
                 {{ tab.name }}
@@ -233,15 +250,13 @@
     createApp({
         components: { IconEye, IconHeart, IconCheck, IconPause, IconX, IconLink },
         setup() {
-            // 通过请求当前域名的 /api/config 接口来动态获取，避免硬编码
             const uid = ref('');
             const accessToken = ref('');
-
             const userAvatar = ref(`https://lain.bgm.tv/pic/user/l/icon.jpg`);
             const viewMode = ref('all');
             const todayRaw = new Date().getDay();
             const todayId = todayRaw === 0 ? 7 : todayRaw;
-            const currentTab = ref(todayId); 
+            const currentTab = ref(0); 
             const searchQuery = ref('');
             const loading = ref(true);
             const currentChecking = ref('');
@@ -315,17 +330,12 @@
 
             const fetchData = async () => {
                 loading.value = true;
-                
                 try {
-                    // 【关键修改点】这里填入你上面记录的 Worker 地址
                     const configRes = await fetch('https://bgm-config-provider.gooduck.workers.dev');
                     const config = await configRes.json();
                     uid.value = config.uid;
                     accessToken.value = config.token;
-                } catch (e) {
-                    console.error("无法从 Worker 获取配置:", e);
-                    alert("配置获取失败，请检查 Worker 跨域设置或地址");
-                }
+                } catch (e) { console.error("Config fetch failed", e); }
 
                 fetchUserInfo();
                 try {
@@ -351,7 +361,6 @@
                             const epsMeta = await epsRes.json();
                             const totalCount = epsMeta.total || 0;
                             let actualAired = 0;
-                            
                             if (totalCount > 0) {
                                 const lastEpsRes = await fetch(`https://api.bgm.tv/v0/episodes?subject_id=${item.id}&type=0&limit=30&offset=${Math.max(0, totalCount - 30)}`);
                                 const lastEpsData = await lastEpsRes.json();
@@ -359,11 +368,9 @@
                                 if (airedEps.length > 0) actualAired = Math.max(...airedEps.map(ep => ep.sort));
                                 else if (lastEpsData.data[0]?.airdate <= todayISO) actualAired = 1;
                             }
-                            
                             const totalConfig = detail.eps || 0;
                             const isAired = detail.date <= todayISO;
                             let progressStr = isAired ? (totalConfig > 0 && actualAired >= totalConfig ? `全 ${totalConfig} 话 (完结)` : (totalConfig > 0 ? `连载·第 ${actualAired} / ${totalConfig} 话` : `连载·第 ${actualAired} 话`)) : `尚未开播 (${detail.date || '未知'})`;
-                            
                             return { ...item, score: detail.rating?.score || 0, displayProgress: progressStr, isAired, isFinished: totalConfig > 0 && actualAired >= totalConfig, air_weekday: item.air_weekday };
                         } catch (e) { return null; }
                     }));
@@ -388,5 +395,4 @@
     }).mount('#app');
 </script>
 </body>
-
 </html>
