@@ -43,7 +43,7 @@
         .capsule-container {
             background-color: #1a1a24;
             padding: 3px;
-            border-radius: 9999px; /* 足球场圆角 */
+            border-radius: 9999px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
@@ -186,13 +186,13 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-3">
-            <div class="w-full sm:w-48 md:w-64">
+        <div class="flex items-center gap-4">
+            <div class="w-full sm:w-56 md:w-72">
                 <input v-model="searchQuery" type="text" placeholder="快速定位番剧..." 
-                    class="search-input rounded-xl px-4 h-[40px] text-sm w-full">
+                    class="search-input rounded-2xl px-5 h-[40px] text-base w-full">
             </div>
             <a :href="'https://bgm.tv/user/' + uid" target="_blank" class="group shrink-0 flex items-center">
-                <div class="w-[42px] h-[42px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-pink-500 group-hover:shadow-[0_0_15px_rgba(236,72,153,0.6)] transition-all duration-300">
+                <div class="w-[42px] h-[42px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-pink-500 group-hover:shadow-[0_0_20px_rgba(236,72,153,0.7)] transition-all duration-300 flex items-center justify-center">
                     <img :src="userAvatar" class="w-full h-full object-cover" @error="handleAvatarError" alt="avatar">
                 </div>
             </a>
@@ -423,4 +423,3 @@
 </script>
 </body>
 </html>
-
