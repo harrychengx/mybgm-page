@@ -191,7 +191,7 @@
     <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
         <div v-for="item in displayList" :key="item.id" class="anime-card group p-2 rounded-2xl relative">
             <div class="poster-container">
-                <img :src="item.images?.large?.replace('http:', 'https:')" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" loading="lazy">
+                <img :src="item.images?.large?.replace('http:', 'https:') || 'https://lain.bgm.tv/img/no_icon_subject.png'" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" loading="lazy">
                 <div class="btn-action-container flex flex-col items-center justify-center gap-1.5 px-4">
                     <template v-if="myCollection[item.id] !== 2">
                         <button v-if="shouldShowBtn(item, 1)" @click.stop="updateCollection(item, 1)" class="w-full max-w-[100px] bg-pink-500 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(236,72,153,0.3)] hover:brightness-110 transition-all">想看</button>
@@ -247,10 +247,10 @@
             const currentChecking = ref('');
             const fullList = ref([]);
             const myCollection = ref({}); 
-            const calendarIds = new Set(); // 记录日历表中的 ID
+            const calendarIds = new Set(); 
 
             const currentSeasonLabel = computed(() => {
-                if (viewMode.value === 'mine') return 'MINE';
+                if (viewMode.value === 'mine') return 'MY ALL';
                 const now = new Date();
                 const year = now.getFullYear();
                 const month = now.getMonth() + 1;
@@ -318,10 +318,18 @@
                 const names = ['全部', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
                 return names.map((name, index) => {
                     const count = fullList.value.filter(item => {
+                        // 如果是“全部”标签且处于“俺の追番”模式，统计所有已收藏
+                        if (index === 0 && viewMode.value === 'mine') {
+                             return !!myCollection.value[item.id];
+                        }
+                        // 否则：必须匹配星期，且如果在“俺の追番”模式下必须已收藏
                         const matchDay = (index === 0 || item.air_weekday === index);
                         const matchMode = (viewMode.value === 'all' || myCollection.value[item.id]);
-                        const matchAired = (index === 0) ? true : item.isAired;
-                        return matchDay && matchMode && matchAired;
+                        // 对于具体星期，只有日历（本季）中的番剧才显示
+                        const isCalendarItem = calendarIds.has(item.id);
+                        if (index !== 0 && !isCalendarItem) return false;
+                        
+                        return matchDay && matchMode;
                     }).length;
                     return { id: index, name, date: getDayDate(index), count, isToday: index === todayId };
                 });
@@ -338,24 +346,43 @@
 
                 fetchUserInfo();
                 try {
+                    // 1. 获取用户所有收藏（包含旧番）
+                    let mySubjectIds = new Set();
                     for (let type = 1; type <= 5; type++) {
                         const collRes = await fetch(`https://api.bgm.tv/v0/users/${uid.value}/collections?subject_type=2&type=${type}&limit=100`);
                         const collJson = await collRes.json();
-                        if (collJson.data) collJson.data.forEach(i => myCollection.value[i.subject_id] = type);
+                        if (collJson.data) {
+                            collJson.data.forEach(i => {
+                                myCollection.value[i.subject_id] = type;
+                                mySubjectIds.add(i.subject_id);
+                            });
+                        }
                     }
                     
+                    // 2. 获取日历（本季放送）
                     const calRes = await fetch(`https://api.bgm.tv/calendar`);
                     const calJson = await calRes.json();
-                    let rawItems = [];
-                    calJson.forEach(day => day.items.forEach(anime => { 
-                        anime.air_weekday = day.weekday.id; 
-                        calendarIds.add(anime.id); // 只要在日历里的，就是正在播的
-                        rawItems.push(anime); 
-                    }));
+                    let itemsToFetch = new Map();
                     
-                    const detailedItems = await Promise.all(rawItems.map(async (item) => {
+                    calJson.forEach(day => day.items.forEach(anime => { 
+                        anime.air_weekday = day.weekday.id;
+                        calendarIds.add(anime.id);
+                        itemsToFetch.set(anime.id, anime);
+                    }));
+
+                    // 3. 将不在日历里的收藏番剧也加入队列
+                    mySubjectIds.forEach(id => {
+                        if (!itemsToFetch.has(id)) {
+                            itemsToFetch.set(id, { id: id, air_weekday: null }); // 非本季番剧 air_weekday 为空
+                        }
+                    });
+
+                    const rawArray = Array.from(itemsToFetch.values());
+
+                    // 4. 并发获取所有番剧的详细进度和评分
+                    const detailedItems = await Promise.all(rawArray.map(async (item) => {
                         try {
-                            currentChecking.value = item.name_cn || item.name;
+                            currentChecking.value = item.name_cn || item.name || `ID:${item.id}`;
                             const detailRes = await fetch(`https://api.bgm.tv/v0/subjects/${item.id}`);
                             const detail = await detailRes.json();
                             
@@ -363,13 +390,12 @@
                             if (filterKeywords.some(k => infoBoxStr.includes(k))) return null;
 
                             const isAired = detail.date <= todayISO;
-                            const isNewSeasonUpdate = calendarIds.has(item.id); // 核心判定：是否在日历更新表中
+                            const isNewSeasonUpdate = calendarIds.has(item.id);
 
                             let actualAiredNum = 0;
                             let staticTotal = detail.eps || detail.total_episodes || 0; 
 
                             if (isAired) {
-                                // 针对长篇/新番，只看最后的章节情况
                                 const metaRes = await fetch(`https://api.bgm.tv/v0/episodes?subject_id=${item.id}&type=0&limit=1`);
                                 const metaData = await metaRes.json();
                                 let offset = Math.max(0, (metaData.total || 0) - 100);
@@ -382,25 +408,15 @@
                                 if (airedEps.length > 0) {
                                     actualAiredNum = Math.max(...airedEps.map(e => e.sort));
                                 }
-
-                                // 柯南式修正：分母脏数据检测
-                                if (staticTotal > actualAiredNum + 50 && actualAiredNum > 100) {
-                                    staticTotal = 0;
-                                }
+                                if (staticTotal > actualAiredNum + 50 && actualAiredNum > 100) staticTotal = 0;
                             }
 
-                            // 修正逻辑：
-                            // 1. 如果在日历表中（isNewSeasonUpdate），且 (分子 < 分母) -> 连载中 (1/10)
-                            // 2. 如果在日历表中，且 (分子 >= 分母) -> 说明数据库还没改，强行显示连载中，隐藏分母 (29)
-                            // 3. 只有不在日历表中且分子=分母，才算完结
-                            
                             let isActuallyFinished = false;
                             if (!isNewSeasonUpdate && staticTotal > 0 && actualAiredNum >= staticTotal) {
                                 isActuallyFinished = true;
                             }
-
                             if (isNewSeasonUpdate && actualAiredNum >= staticTotal && staticTotal > 0) {
-                                staticTotal = 0; // 强行隐藏过期的分母
+                                staticTotal = 0; 
                             }
                             
                             let progressStr = isAired ? 
@@ -410,6 +426,9 @@
 
                             return { 
                                 ...item, 
+                                name: item.name || detail.name,
+                                name_cn: item.name_cn || detail.name_cn,
+                                images: detail.images,
                                 score: detail.rating?.score || 0, 
                                 displayProgress: progressStr, 
                                 isAired, 
@@ -424,8 +443,21 @@
 
             const displayList = computed(() => {
                 let list = fullList.value;
-                if (currentTab.value !== 0) list = list.filter(a => a.air_weekday === currentTab.value);
-                if (viewMode.value === 'mine') list = list.filter(a => myCollection.value[a.id]);
+                
+                // 核心过滤逻辑
+                if (currentTab.value === 0) {
+                    // “全部”标签：如果在“俺の追番”模式，显示所有收藏
+                    if (viewMode.value === 'mine') {
+                        list = list.filter(a => !!myCollection.value[a.id]);
+                    }
+                } else {
+                    // “周几”标签：只显示属于日历（本季）的番剧
+                    list = list.filter(a => a.air_weekday === currentTab.value && calendarIds.has(a.id));
+                    if (viewMode.value === 'mine') {
+                        list = list.filter(a => !!myCollection.value[a.id]);
+                    }
+                }
+
                 if (searchQuery.value) {
                     const q = searchQuery.value.toLowerCase();
                     list = list.filter(a => (a.name_cn || '').toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
