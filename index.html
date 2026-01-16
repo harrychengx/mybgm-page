@@ -20,9 +20,9 @@
             --text-main: #f0f0f7;
         }
         body { 
-            font-family: 'Noto Sans SC', sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text-main);
+             font-family: 'Noto Sans SC', sans-serif; 
+             background-color: var(--bg-color); 
+             color: var(--text-main);
         }
         .anime-logo {
             font-family: 'Mochiy Pop One', sans-serif;
@@ -86,13 +86,13 @@
             background: transparent;
         }
         .tab-selected { 
-            background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%) !important; 
-            color: white !important; 
-            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+             background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%) !important; 
+             color: white !important; 
+             box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
             border: 2px solid rgba(255, 255, 255, 0.6) !important;
         }
         .tab-is-today:not(.tab-selected) { 
-            border: 2px solid var(--accent-cyan) !important;
+             border: 2px solid var(--accent-cyan) !important;
             color: var(--accent-cyan) !important;
         }
         .btn-action-container {
@@ -146,23 +146,18 @@
     </style>
 </head>
 <body class="p-4 md:p-10">
-
 <div id="app" v-cloak class="max-w-7xl mx-auto rounded-3xl p-6 md:p-8 border border-white/5 shadow-2xl">
     <header class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
         <div class="flex items-center gap-5">
-            <h1 class="text-2xl md:text-3xl font-black tracking-tighter shrink-0 anime-logo">
-                俺のbangumi project
-            </h1>
+            <h1 class="text-2xl md:text-3xl font-black tracking-tighter shrink-0 anime-logo">俺のbangumi project</h1>
             <div class="capsule-container scale-90 origin-left">
                 <button @click="viewMode = 'mine'" :class="['capsule-btn', viewMode === 'mine' ? 'capsule-active' : 'hover:text-gray-300']">俺の追番</button>
                 <button @click="viewMode = 'all'" :class="['capsule-btn', viewMode === 'all' ? 'capsule-active' : 'hover:text-gray-300']">本季放送</button>
             </div>
         </div>
-
         <div class="flex items-center gap-4">
             <div class="w-full sm:w-56 md:w-72">
-                <input v-model="searchQuery" type="text" placeholder="快速定位番剧..." 
-                    class="search-input rounded-2xl px-5 h-[40px] text-sm w-full">
+                <input v-model="searchQuery" type="text" placeholder="快速定位番剧..." class="search-input rounded-2xl px-5 h-[40px] text-sm w-full">
             </div>
             <a :href="'https://bgm.tv/user/' + uid" target="_blank" class="group shrink-0 flex items-center">
                 <div class="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-transparent group-hover:border-pink-500 group-hover:shadow-[0_0_20px_rgba(236,72,153,0.7)] transition-all duration-300 flex items-center justify-center">
@@ -180,9 +175,7 @@
             ]">
             <span class="text-sm font-bold flex items-center gap-1.5 leading-none">
                 {{ tab.name }}
-                <span v-if="tab.count > 0" class="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10">
-                    {{ tab.count }}
-                </span>
+                <span v-if="tab.count > 0" class="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10">{{ tab.count }}</span>
             </span>
             <span class="text-[10px] mt-2 opacity-40 font-bold tracking-tighter uppercase">
                 {{ tab.id === 0 ? currentSeasonLabel : tab.date }}
@@ -198,10 +191,7 @@
     <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
         <div v-for="item in displayList" :key="item.id" class="anime-card group p-2 rounded-2xl relative">
             <div class="poster-container">
-                <img :src="item.images?.large?.replace('http:', 'https:')" 
-                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" 
-                     loading="lazy">
-                
+                <img :src="item.images?.large?.replace('http:', 'https:')" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" loading="lazy">
                 <div class="btn-action-container flex flex-col items-center justify-center gap-1.5 px-4">
                     <template v-if="myCollection[item.id] !== 2">
                         <button v-if="shouldShowBtn(item, 1)" @click.stop="updateCollection(item, 1)" class="w-full max-w-[100px] bg-pink-500 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(236,72,153,0.3)] hover:brightness-110 transition-all">想看</button>
@@ -211,21 +201,16 @@
                         <button v-if="shouldShowBtn(item, 5)" @click.stop="updateCollection(item, 5)" class="w-full max-w-[100px] bg-red-800 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10_rgba(153,27,27,0.3)] hover:brightness-110 transition-all">抛弃</button>
                     </template>
                     <button @click.stop="openBangumi(item.id)" class="w-full max-w-[100px] bg-white/10 hover:bg-white/20 text-white border border-white/20 py-1.5 rounded-lg font-bold text-[10px] mt-2 flex items-center justify-center gap-1 transition-all">
-                        <icon-link></icon-link>
-                        详情/删除
+                        <icon-link></icon-link>详情/删除
                     </button>
                 </div>
-
-                <div v-if="myCollection[item.id]" 
-                    :class="['status-badge text-white', statusConfig[myCollection[item.id]].color]">
+                <div v-if="myCollection[item.id]" :class="['status-badge text-white', statusConfig[myCollection[item.id]].color]">
                     <component :is="statusConfig[myCollection[item.id]].icon"></component>
                 </div>
-
                 <div v-if="item.score" class="score-badge-box">
                     <span class="score-num">{{ item.score.toFixed(1) }}</span>
                 </div>
             </div>
-
             <div class="mt-3 px-1">
                 <h3 class="text-sm font-bold text-white/90 line-clamp-1 group-hover:text-pink-400 transition-colors leading-tight">{{ item.name_cn || item.name }}</h3>
                 <div class="text-[11px] mt-2 flex items-center gap-2">
@@ -262,12 +247,12 @@
             const currentChecking = ref('');
             const fullList = ref([]);
             const myCollection = ref({}); 
+            const calendarIds = new Set(); // 记录日历表中的 ID
 
             const currentSeasonLabel = computed(() => {
                 if (viewMode.value === 'mine') return 'MINE';
-                
                 const now = new Date();
-                const year = now.getFullYear(); // 修改为四位数
+                const year = now.getFullYear();
                 const month = now.getMonth() + 1;
                 let season = "";
                 if (month >= 1 && month <= 3) season = "冬";
@@ -276,7 +261,7 @@
                 else season = "秋";
                 return `${year} ${season}`;
             });
-            
+
             const statusConfig = {
                 1: { name: '想看', color: 'bg-pink-500', icon: 'IconHeart' },
                 2: { name: '看过', color: 'bg-[#2de2e6] text-[#1a1a24]', icon: 'IconCheck' },
@@ -349,7 +334,7 @@
                     const config = await configRes.json();
                     uid.value = config.uid;
                     accessToken.value = config.token;
-                } catch (e) { console.error("Config fetch failed", e); }
+                } catch (e) {}
 
                 fetchUserInfo();
                 try {
@@ -358,34 +343,79 @@
                         const collJson = await collRes.json();
                         if (collJson.data) collJson.data.forEach(i => myCollection.value[i.subject_id] = type);
                     }
+                    
                     const calRes = await fetch(`https://api.bgm.tv/calendar`);
                     const calJson = await calRes.json();
                     let rawItems = [];
-                    calJson.forEach(day => day.items.forEach(anime => { anime.air_weekday = day.weekday.id; rawItems.push(anime); }));
+                    calJson.forEach(day => day.items.forEach(anime => { 
+                        anime.air_weekday = day.weekday.id; 
+                        calendarIds.add(anime.id); // 只要在日历里的，就是正在播的
+                        rawItems.push(anime); 
+                    }));
                     
                     const detailedItems = await Promise.all(rawItems.map(async (item) => {
                         try {
                             currentChecking.value = item.name_cn || item.name;
                             const detailRes = await fetch(`https://api.bgm.tv/v0/subjects/${item.id}`);
                             const detail = await detailRes.json();
+                            
                             const infoBoxStr = JSON.stringify(detail.infobox || '');
                             if (filterKeywords.some(k => infoBoxStr.includes(k))) return null;
 
-                            const epsRes = await fetch(`https://api.bgm.tv/v0/episodes?subject_id=${item.id}&type=0&limit=1`);
-                            const epsMeta = await epsRes.json();
-                            const totalCount = epsMeta.total || 0;
-                            let actualAired = 0;
-                            if (totalCount > 0) {
-                                const lastEpsRes = await fetch(`https://api.bgm.tv/v0/episodes?subject_id=${item.id}&type=0&limit=30&offset=${Math.max(0, totalCount - 30)}`);
-                                const lastEpsData = await lastEpsRes.json();
-                                const airedEps = lastEpsData.data.filter(ep => ep.airdate && ep.airdate <= todayISO);
-                                if (airedEps.length > 0) actualAired = Math.max(...airedEps.map(ep => ep.sort));
-                                else if (lastEpsData.data[0]?.airdate <= todayISO) actualAired = 1;
-                            }
-                            const totalConfig = detail.eps || 0;
                             const isAired = detail.date <= todayISO;
-                            let progressStr = isAired ? (totalConfig > 0 && actualAired >= totalConfig ? `全 ${totalConfig} 话 (完结)` : (totalConfig > 0 ? `连载·第 ${actualAired} / ${totalConfig} 话` : `连载·第 ${actualAired} 话`)) : `尚未开播 (${detail.date || '未知'})`;
-                            return { ...item, score: detail.rating?.score || 0, displayProgress: progressStr, isAired, isFinished: totalConfig > 0 && actualAired >= totalConfig, air_weekday: item.air_weekday };
+                            const isNewSeasonUpdate = calendarIds.has(item.id); // 核心判定：是否在日历更新表中
+
+                            let actualAiredNum = 0;
+                            let staticTotal = detail.eps || detail.total_episodes || 0; 
+
+                            if (isAired) {
+                                // 针对长篇/新番，只看最后的章节情况
+                                const metaRes = await fetch(`https://api.bgm.tv/v0/episodes?subject_id=${item.id}&type=0&limit=1`);
+                                const metaData = await metaRes.json();
+                                let offset = Math.max(0, (metaData.total || 0) - 100);
+                                
+                                const epsRes = await fetch(`https://api.bgm.tv/v0/episodes?subject_id=${item.id}&type=0&limit=100&offset=${offset}`);
+                                const epsData = await epsRes.json();
+                                const validEps = (epsData.data || []).filter(ep => ep.type === 0 && !isNaN(ep.sort));
+                                
+                                const airedEps = validEps.filter(ep => ep.airdate && ep.airdate <= todayISO);
+                                if (airedEps.length > 0) {
+                                    actualAiredNum = Math.max(...airedEps.map(e => e.sort));
+                                }
+
+                                // 柯南式修正：分母脏数据检测
+                                if (staticTotal > actualAiredNum + 50 && actualAiredNum > 100) {
+                                    staticTotal = 0;
+                                }
+                            }
+
+                            // 修正逻辑：
+                            // 1. 如果在日历表中（isNewSeasonUpdate），且 (分子 < 分母) -> 连载中 (1/10)
+                            // 2. 如果在日历表中，且 (分子 >= 分母) -> 说明数据库还没改，强行显示连载中，隐藏分母 (29)
+                            // 3. 只有不在日历表中且分子=分母，才算完结
+                            
+                            let isActuallyFinished = false;
+                            if (!isNewSeasonUpdate && staticTotal > 0 && actualAiredNum >= staticTotal) {
+                                isActuallyFinished = true;
+                            }
+
+                            if (isNewSeasonUpdate && actualAiredNum >= staticTotal && staticTotal > 0) {
+                                staticTotal = 0; // 强行隐藏过期的分母
+                            }
+                            
+                            let progressStr = isAired ? 
+                                (isActuallyFinished ? `全 ${staticTotal} 话 (完结)` : 
+                                (staticTotal > 0 ? `连载·第 ${actualAiredNum} / ${staticTotal} 话` : `连载·第 ${actualAiredNum} 话`)) : 
+                                `尚未开播 (${detail.date || '未知'})`;
+
+                            return { 
+                                ...item, 
+                                score: detail.rating?.score || 0, 
+                                displayProgress: progressStr, 
+                                isAired, 
+                                isFinished: isActuallyFinished, 
+                                air_weekday: item.air_weekday 
+                            };
                         } catch (e) { return null; }
                     }));
                     fullList.value = detailedItems.filter(i => i !== null).sort((a,b) => b.score - a.score);
@@ -394,7 +424,7 @@
 
             const displayList = computed(() => {
                 let list = fullList.value;
-                if (currentTab.value !== 0) list = list.filter(a => a.air_weekday === currentTab.value && a.isAired);
+                if (currentTab.value !== 0) list = list.filter(a => a.air_weekday === currentTab.value);
                 if (viewMode.value === 'mine') list = list.filter(a => myCollection.value[a.id]);
                 if (searchQuery.value) {
                     const q = searchQuery.value.toLowerCase();
@@ -410,5 +440,3 @@
 </script>
 </body>
 </html>
-
-
