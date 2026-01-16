@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Bangumi Synthwave Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Mochiiy+Pop+One&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #24242e;
+            --card-bg: #2a2a35;
+            --accent-pink: #ff7edb;
+            --accent-cyan: #2de2e6;
+            --accent-purple: #ae81ff;
+            --accent-orange: #ff9d00;
+            --text-main: #f0f0f7;
+        }
+        body { 
+            font-family: 'Noto Sans SC', sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+        }
+        .anime-logo {
+            font-family: 'Mochiiy Pop One', sans-serif;
+            background: linear-gradient(135deg, var(--accent-pink) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px rgba(255, 126, 219, 0.4));
+            display: block; 
+            line-height: 1.6;
+            padding-bottom: 8px;
+        }
+        .anime-card { 
+            background-color: var(--card-bg);
+            border: 1px solid rgba(174, 129, 255, 0.12);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .anime-card:hover { 
+            transform: translateY(-4px); 
+            border-color: var(--accent-pink);
+            box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.6);
+        }
+        .poster-container {
+            position: relative;
+            aspect-ratio: 3/4;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            isolation: isolate; 
+            background-color: #1a1a24;
+        }
+        [v-cloak] { display: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .tab-selected { 
+            background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%) !important; 
+            color: white !important; 
+            box-shadow: 0 0 4px rgba(236, 72, 153, 0.2) !important;
+            border-color: transparent !important;
+        }
+        .tab-is-today:not(.tab-selected) { 
+            border: 2px solid var(--accent-cyan) !important;
+            color: var(--accent-cyan) !important;
+        }
+        .btn-action-container {
+            position: absolute;
+            top: -1.5px;
+            left: -1.5px;
+            right: -1.5px;
+            bottom: -2.5px;
+            opacity: 0;
+            background: rgba(26, 26, 36, 0.5); 
+            backdrop-filter: blur(8px);
+            border-radius: calc(0.75rem + 2px); 
+            transition: all 0.25s ease;
+            z-index: 10;
+        }
+        .anime-card:hover .btn-action-container { opacity: 1; }
+        .search-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(174, 129, 255, 0.2);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            border-color: var(--accent-cyan) !important;
+            box-shadow: 0 0 12px rgba(45, 226, 230, 0.4);
+            outline: none;
+        }
+        .score-badge-box {
+            position: absolute;
+            top: 0.4rem; 
+            right: 0.4rem; 
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            min-width: 2.3rem;
+            height: 1.3rem; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            z-index: 20;
+            padding: 0 1px;
+        }
+        .score-num {
+            color: var(--accent-orange);
+            font-size: 0.8rem;
+            font-weight: 900;
+            filter: drop-shadow(0 0 2px rgba(255, 157, 0, 0.5));
+            line-height: 1;
+            margin-top: -1px; 
+            display: inline-block;
+        }
+        .status-badge {
+            position: absolute;
+            top: 0.4rem; 
+            left: 0.4rem; 
+            width: 1.3rem;
+            height: 1.3rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+<div id="app" v-cloak class="max-w-7xl mx-auto rounded-3xl p-6 md:p-8 border border-white/5 shadow-2xl">
+    <header class="flex flex-row items-center mb-10 gap-4">
+        <div class="flex items-center overflow-visible">
+            <h1 class="text-2xl md:text-4xl font-black tracking-tighter shrink-0 anime-logo">
+                俺のbangumi project
+            </h1>
+        </div>
+        <div class="ml-auto flex items-center gap-3">
+            <div class="hidden sm:block w-48 md:w-72">
+                <input v-model="searchQuery" type="text" placeholder="快速定位番剧..." 
+                    class="search-input rounded-xl px-4 h-[42px] text-sm w-full">
+            </div>
+            <a :href="'https://bgm.tv/user/' + uid" target="_blank" class="shrink-0 flex items-center">
+                <div class="w-[42px] h-[42px] rounded-full overflow-hidden border-2 border-pink-500/50">
+                    <img :src="userAvatar" class="w-full h-full object-cover hover:scale-110 transition-transform" @error="handleAvatarError" alt="avatar">
+                </div>
+            </a>
+        </div>
+    </header>
+
+    <div class="mb-8 flex bg-[#1a1a24] p-1 rounded-xl w-fit border border-white/10 shadow-inner">
+        <button @click="viewMode = 'mine'" :class="['px-5 py-2 rounded-lg text-xs font-bold transition-all', viewMode === 'mine' ? 'tab-selected' : 'text-gray-500 hover:text-gray-400']">俺の追番</button>
+        <button @click="viewMode = 'all'" :class="['px-5 py-2 rounded-lg text-xs font-bold transition-all', viewMode === 'all' ? 'tab-selected' : 'text-gray-500 hover:text-gray-400']">本季放送</button>
+    </div>
+
+    <nav class="flex items-center gap-2 md:gap-3 border-b border-white/5 mb-8 overflow-x-auto no-scrollbar pb-6">
+        <button v-for="(tab, index) in navTabs" :key="index" @click="currentTab = tab.id"
+            :class="[
+                'flex flex-col items-center justify-center min-w-[85px] h-[64px] rounded-2xl transition-all duration-200 border relative overflow-hidden', 
+                currentTab === tab.id ? 'tab-selected' : (tab.isToday ? 'tab-is-today' : 'bg-transparent text-gray-500 border-white/10 hover:border-pink-500/20')
+            ]">
+            <span class="text-sm font-bold flex items-center gap-1.5 leading-none">
+                {{ tab.name }}
+                <span v-if="tab.count > 0" class="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10">
+                    {{ tab.count }}
+                </span>
+            </span>
+            <span class="text-[10px] mt-2 opacity-40 font-bold tracking-tighter uppercase">
+                {{ tab.id === 0 ? 'ALL' : tab.date }}
+            </span>
+        </button>
+    </nav>
+
+    <div v-if="loading" class="flex flex-col items-center justify-center py-32">
+        <div class="w-12 h-12 border-4 border-cyan-500/20 border-t-pink-500 rounded-full animate-spin"></div>
+        <p class="mt-4 text-cyan-400 font-bold text-sm tracking-widest uppercase">Syncing... {{ currentChecking }}</p>
+    </div>
+
+    <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+        <div v-for="item in displayList" :key="item.id" class="anime-card group p-2 rounded-2xl relative">
+            <div class="poster-container">
+                <img :src="item.images?.large?.replace('http:', 'https:')" 
+                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" 
+                     loading="lazy">
+                
+                <div class="btn-action-container flex flex-col items-center justify-center gap-1.5 px-4">
+                    <template v-if="myCollection[item.id] !== 2">
+                        <button v-if="shouldShowBtn(item, 1)" @click.stop="updateCollection(item, 1)" class="w-full max-w-[100px] bg-pink-500 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(236,72,153,0.3)] hover:brightness-110 transition-all">想看</button>
+                        <button v-if="shouldShowBtn(item, 3)" @click.stop="updateCollection(item, 3)" class="w-full max-w-[100px] bg-[#52B54B] text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(82,181,75,0.3)] hover:brightness-110 transition-all">在看</button>
+                        <button v-if="shouldShowBtn(item, 2)" @click.stop="updateCollection(item, 2)" class="w-full max-w-[100px] bg-[#2de2e6] text-[#1a1a24] py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(45,226,230,0.3)] hover:brightness-110 transition-all">看过</button>
+                        <button v-if="shouldShowBtn(item, 4)" @click.stop="updateCollection(item, 4)" class="w-full max-w-[100px] bg-amber-500 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(245,158,11,0.3)] hover:brightness-110 transition-all">搁置</button>
+                        <button v-if="shouldShowBtn(item, 5)" @click.stop="updateCollection(item, 5)" class="w-full max-w-[100px] bg-red-800 text-white py-1.5 rounded-lg font-bold text-[10px] shadow-[0_4px_10px_rgba(153,27,27,0.3)] hover:brightness-110 transition-all">抛弃</button>
+                    </template>
+                    <button @click.stop="openBangumi(item.id)" class="w-full max-w-[100px] bg-white/10 hover:bg-white/20 text-white border border-white/20 py-1.5 rounded-lg font-bold text-[10px] mt-2 flex items-center justify-center gap-1 transition-all">
+                        <icon-link></icon-link>
+                        详情/删除
+                    </button>
+                </div>
+
+                <div v-if="myCollection[item.id]" 
+                    :class="['status-badge text-white', statusConfig[myCollection[item.id]].color]">
+                    <component :is="statusConfig[myCollection[item.id]].icon"></component>
+                </div>
+
+                <div v-if="item.score" class="score-badge-box">
+                    <span class="score-num">{{ item.score.toFixed(1) }}</span>
+                </div>
+            </div>
+
+            <div class="mt-3 px-1">
+                <h3 class="text-sm font-bold text-white/90 line-clamp-1 group-hover:text-pink-400 transition-colors leading-tight">{{ item.name_cn || item.name }}</h3>
+                <div class="text-[11px] mt-2 flex items-center gap-2">
+                    <span v-if="item.isAired" :class="['w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(82,181,75,0.4)]', item.isFinished ? 'bg-red-500' : 'bg-[#52B54B] animate-pulse']"></span>
+                    <span :class="['tracking-tighter font-bold', item.isAired ? 'text-cyan-400/80' : 'text-purple-400']">{{ item.displayProgress }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    const IconEye = { template: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>` };
+    const IconHeart = { template: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>` };
+    const IconCheck = { template: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>` };
+    const IconPause = { template: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>` };
+    const IconX = { template: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>` };
+    const IconLink = { template: `<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>` };
+
+    createApp({
+        components: { IconEye, IconHeart, IconCheck, IconPause, IconX, IconLink },
+        setup() {
+            // 通过请求当前域名的 /api/config 接口来动态获取，避免硬编码
+            const uid = ref('');
+            const accessToken = ref('');
+
+            const userAvatar = ref(`https://lain.bgm.tv/pic/user/l/icon.jpg`);
+            const viewMode = ref('all');
+            const todayRaw = new Date().getDay();
+            const todayId = todayRaw === 0 ? 7 : todayRaw;
+            const currentTab = ref(todayId); 
+            const searchQuery = ref('');
+            const loading = ref(true);
+            const currentChecking = ref('');
+            const fullList = ref([]);
+            const myCollection = ref({}); 
+            
+            const statusConfig = {
+                1: { name: '想看', color: 'bg-pink-500', icon: 'IconHeart' },
+                2: { name: '看过', color: 'bg-[#2de2e6] text-[#1a1a24]', icon: 'IconCheck' },
+                3: { name: '在看', color: 'bg-[#52B54B]', icon: 'IconEye' },
+                4: { name: '搁置', color: 'bg-amber-500', icon: 'IconPause' },
+                5: { name: '抛弃', color: 'bg-red-800', icon: 'IconX' }
+            };
+
+            const shouldShowBtn = (item, btnType) => {
+                const currentStatus = myCollection.value[item.id];
+                if (!item.isAired) return btnType === 1 && !currentStatus;
+                if (!currentStatus) return btnType !== 4 && btnType !== 5;
+                if (currentStatus === 1) return btnType !== 1;
+                if (currentStatus === 3) return btnType !== 1 && btnType !== 3;
+                if (currentStatus === 4) return btnType !== 1 && btnType !== 4;
+                if (currentStatus === 5) return btnType === 3;
+                return true;
+            };
+
+            const todayDateObj = new Date();
+            const todayISO = todayDateObj.toISOString().split('T')[0];
+            const filterKeywords = ['bilibili', 'ABC iview', 'BYUtv', '优酷', '爱奇艺', '腾讯视频', '芒果TV', '西瓜视频', 'YouTube', 'Adult Swim'];
+
+            const fetchUserInfo = async () => {
+                try {
+                    const res = await fetch(`https://api.bgm.tv/v0/users/${uid.value}`);
+                    const data = await res.json();
+                    if (data.avatar && data.avatar.large) userAvatar.value = data.avatar.large.replace('http:', 'https:');
+                } catch (e) {}
+            };
+
+            const updateCollection = async (item, type) => {
+                if (!accessToken.value) { alert('未检测到有效授权'); return; }
+                try {
+                    const res = await fetch(`https://api.bgm.tv/v0/users/-/collections/${item.id}`, { 
+                        method: 'POST', 
+                        headers: { 'Authorization': `Bearer ${accessToken.value}`, 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }, 
+                        body: JSON.stringify({ type: Number(type) }) 
+                    });
+                    if (res.ok || res.status === 204) myCollection.value[item.id] = type;
+                } catch (e) { alert(e.message); }
+            };
+
+            const getDayDate = (targetWeekday) => {
+                if (targetWeekday === 0) return null;
+                const currentDay = todayDateObj.getDay() || 7;
+                const diff = targetWeekday - currentDay;
+                const targetDate = new Date(todayDateObj);
+                targetDate.setDate(todayDateObj.getDate() + diff);
+                return `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
+            };
+
+            const navTabs = computed(() => {
+                const names = ['全部', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+                return names.map((name, index) => {
+                    const count = fullList.value.filter(item => {
+                        const matchDay = (index === 0 || item.air_weekday === index);
+                        const matchMode = (viewMode.value === 'all' || myCollection.value[item.id]);
+                        const matchAired = (index === 0) ? true : item.isAired;
+                        return matchDay && matchMode && matchAired;
+                    }).length;
+                    return { id: index, name, date: getDayDate(index), count, isToday: index === todayId };
+                });
+            });
+
+            const fetchData = async () => {
+                loading.value = true;
+                
+                try {
+                    // 【关键修改点】这里填入你上面记录的 Worker 地址
+                    const configRes = await fetch('https://bgm-config-provider.gooduck.workers.dev');
+                    const config = await configRes.json();
+                    uid.value = config.uid;
+                    accessToken.value = config.token;
+                } catch (e) {
+                    console.error("无法从 Worker 获取配置:", e);
+                    alert("配置获取失败，请检查 Worker 跨域设置或地址");
+                }
+
+                fetchUserInfo();
+                try {
+                    for (let type = 1; type <= 5; type++) {
+                        const collRes = await fetch(`https://api.bgm.tv/v0/users/${uid.value}/collections?subject_type=2&type=${type}&limit=100`);
+                        const collJson = await collRes.json();
+                        if (collJson.data) collJson.data.forEach(i => myCollection.value[i.subject_id] = type);
+                    }
+                    const calRes = await fetch(`https://api.bgm.tv/calendar`);
+                    const calJson = await calRes.json();
+                    let rawItems = [];
+                    calJson.forEach(day => day.items.forEach(anime => { anime.air_weekday = day.weekday.id; rawItems.push(anime); }));
+                    
+                    const detailedItems = await Promise.all(rawItems.map(async (item) => {
+                        try {
+                            currentChecking.value = item.name_cn || item.name;
+                            const detailRes = await fetch(`https://api.bgm.tv/v0/subjects/${item.id}`);
+                            const detail = await detailRes.json();
+                            const infoBoxStr = JSON.stringify(detail.infobox || '');
+                            if (filterKeywords.some(k => infoBoxStr.includes(k))) return null;
+
+                            const epsRes = await fetch(`https://api.bgm.tv/v0/episodes?subject_id=${item.id}&type=0&limit=1`);
+                            const epsMeta = await epsRes.json();
+                            const totalCount = epsMeta.total || 0;
+                            let actualAired = 0;
+                            
+                            if (totalCount > 0) {
+                                const lastEpsRes = await fetch(`https://api.bgm.tv/v0/episodes?subject_id=${item.id}&type=0&limit=30&offset=${Math.max(0, totalCount - 30)}`);
+                                const lastEpsData = await lastEpsRes.json();
+                                const airedEps = lastEpsData.data.filter(ep => ep.airdate && ep.airdate <= todayISO);
+                                if (airedEps.length > 0) actualAired = Math.max(...airedEps.map(ep => ep.sort));
+                                else if (lastEpsData.data[0]?.airdate <= todayISO) actualAired = 1;
+                            }
+                            
+                            const totalConfig = detail.eps || 0;
+                            const isAired = detail.date <= todayISO;
+                            let progressStr = isAired ? (totalConfig > 0 && actualAired >= totalConfig ? `全 ${totalConfig} 话 (完结)` : (totalConfig > 0 ? `连载·第 ${actualAired} / ${totalConfig} 话` : `连载·第 ${actualAired} 话`)) : `尚未开播 (${detail.date || '未知'})`;
+                            
+                            return { ...item, score: detail.rating?.score || 0, displayProgress: progressStr, isAired, isFinished: totalConfig > 0 && actualAired >= totalConfig, air_weekday: item.air_weekday };
+                        } catch (e) { return null; }
+                    }));
+                    fullList.value = detailedItems.filter(i => i !== null).sort((a,b) => b.score - a.score);
+                } catch (err) {} finally { loading.value = false; }
+            };
+
+            const displayList = computed(() => {
+                let list = fullList.value;
+                if (currentTab.value !== 0) list = list.filter(a => a.air_weekday === currentTab.value && a.isAired);
+                if (viewMode.value === 'mine') list = list.filter(a => myCollection.value[a.id]);
+                if (searchQuery.value) {
+                    const q = searchQuery.value.toLowerCase();
+                    list = list.filter(a => (a.name_cn || '').toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
+                }
+                return list;
+            });
+
+            onMounted(fetchData);
+            return { uid, userAvatar, handleAvatarError: (e) => e.target.src = "https://lain.bgm.tv/pic/user/l/icon.jpg", viewMode, currentTab, searchQuery, navTabs, loading, currentChecking, displayList, openBangumi: (id) => window.open(`https://bgm.tv/subject/${id}`, '_blank'), updateCollection, myCollection, statusConfig, shouldShowBtn };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
